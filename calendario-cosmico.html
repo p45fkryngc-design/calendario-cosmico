@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Cósmico — Carl Sagan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink:       #0a0a14;
+            --ink-mid:   #10101e;
+            --glass:     rgba(255,255,255,0.04);
+            --border:    rgba(255,255,255,0.08);
+            --gold:      #c9a84c;
+            --gold-dim:  rgba(201,168,76,0.15);
+            --blue:      #5ba4e5;
+            --violet:    #9b72cf;
+            --rose:      #d97f8a;
+            --text:      #d4cfc8;
+            --muted:     #6b6760;
+            --line:      linear-gradient(to bottom, var(--blue), var(--violet), var(--rose));
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--ink);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ─── Starfield ─── */
+        #starfield {
+            position: fixed; inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ─── Header ─── */
+        header {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 80px 24px 48px;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .eyebrow {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 0.7rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: clamp(2.8rem, 8vw, 5.5rem);
+            line-height: 1.05;
+            color: #ede8df;
+            letter-spacing: -0.01em;
+            margin-bottom: 8px;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        .subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: var(--muted);
+            line-height: 1.7;
+            max-width: 560px;
+            margin: 20px auto 0;
+        }
+
+        /* ─── Scale bar ─── */
+        .scale-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0;
+            margin: 44px auto 0;
+            max-width: 680px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .scale-item {
+            flex: 1 1 180px;
+            padding: 16px 20px;
+            border-right: 1px solid var(--border);
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            text-align: center;
+        }
+        .scale-item:last-child { border-right: none; }
+
+        .scale-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .scale-value {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            color: #ede8df;
+        }
+
+        .scale-value span { color: var(--gold); }
+
+        /* ─── Filters ─── */
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 44px;
+        }
+
+        .filter-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 10px 24px;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .filter-btn.active {
+            background: var(--gold-dim);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* ─── Timeline ─── */
+        main {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 64px auto 0;
+            padding: 0 24px 120px;
+        }
+
+        .timeline-wrap {
+            position: relative;
+        }
+
+        /* Vertical line */
+        .timeline-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            left: 28px;
+            width: 1px;
+            background: var(--line);
+            opacity: 0.35;
+        }
+
+        @media (min-width: 700px) {
+            .timeline-wrap::before {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ─── Event card ─── */
+        .evt {
+            display: grid;
+            grid-template-columns: 56px 1fr;
+            gap: 0 20px;
+            margin-bottom: 48px;
+            opacity: 0;
+            transform: translateY(18px);
+            animation: rise 0.55s ease forwards;
+        }
+
+        @keyframes rise {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (min-width: 700px) {
+            .evt {
+                grid-template-columns: 1fr 32px 1fr;
+                gap: 0;
+                align-items: start;
+            }
+
+            .evt.right .evt-card { grid-column: 3; grid-row: 1; }
+            .evt.right .evt-dot  { grid-column: 2; grid-row: 1; }
+            .evt.right .evt-date-col { grid-column: 1; grid-row: 1; }
+
+            .evt.left .evt-card { grid-column: 1; grid-row: 1; }
+            .evt.left .evt-dot  { grid-column: 2; grid-row: 1; }
+            .evt.left .evt-date-col { grid-column: 3; grid-row: 1; }
+        }
+
+        .evt-dot-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 18px;
+        }
+
+        .evt-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: var(--ink-mid);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 12px rgba(201,168,76,0.4);
+            flex-shrink: 0;
+            align-self: center;
+            justify-self: center;
+        }
+
+        @media (min-width: 700px) {
+            .evt-dot-col { display: none; }
+            .evt-dot {
+                display: flex;
+                width: 14px; height: 14px;
+                margin: 20px auto 0;
+            }
+        }
+
+        .evt-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(14px);
+            border-radius: 3px;
+            padding: 22px 24px;
+            transition: border-color 0.25s, transform 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .evt-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: var(--line);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+
+        .evt-card:hover {
+            border-color: rgba(201,168,76,0.3);
+            transform: translateY(-2px);
+        }
+
+        .evt-card:hover::before { opacity: 1; }
+
+        .evt-icon {
+            font-size: 1.5rem;
+            opacity: 0.6;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .evt-meta {
+            font-size: 0.68rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
+
+        .evt-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.35rem;
+            font-weight: 400;
+            color: #ede8df;
+            margin-bottom: 8px;
+            line-height: 1.25;
+        }
+
+        .evt-desc {
+            font-size: 0.9rem;
+            line-height: 1.65;
+            color: var(--text);
+            font-weight: 300;
+        }
+
+        .evt-age {
+            display: inline-block;
+            margin-top: 12px;
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 2px;
+        }
+
+        /* Date column (desktop only) */
+        .evt-date-col {
+            display: none;
+        }
+
+        @media (min-width: 700px) {
+            .evt-date-col {
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                padding-top: 22px;
+            }
+
+            .evt.left .evt-date-col { justify-content: flex-start; padding-left: 20px; }
+            .evt.right .evt-date-col { justify-content: flex-end; padding-right: 20px; }
+            .evt.left .evt-card { padding-right: 28px; }
+            .evt.right .evt-card { padding-left: 28px; }
+        }
+
+        .evt-date-label {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 300;
+            color: var(--muted);
+            opacity: 0.25;
+            text-align: right;
+            line-height: 1.1;
+        }
+
+        /* ─── Footer ─── */
+        footer {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 40px 24px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            line-height: 2;
+        }
+
+        footer em { color: var(--gold); font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 1rem; }
+
+        /* ─── Scroll fade utility ─── */
+        .fade-in { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .fade-in.visible { opacity: 1; transform: none; }
+    </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<header>
+    <p class="eyebrow fade-in">Carl Sagan · Cosmos</p>
+    <h1 class="fade-in"><em>El Calendario</em><br>Cósmico</h1>
+    <p class="subtitle fade-in">
+        13.800 millones de años de historia universal comprimidos en un solo año terrestre. Cada segundo equivale a 438 años de historia real.
+    </p>
+
+    <div class="scale-bar fade-in">
+        <div class="scale-item">
+            <div class="scale-label">1 Segundo</div>
+            <div class="scale-value"><span>≈ 438</span> años</div>
+        </div>
+        <div class="scale-item">
+            <div class="scale-label">1 Minuto</div>
+            <div class="scale-value"><span>≈ 26.000</span> años</div>
+        </div>
+        <div class="scale-item">
+            <div class="scale-label">1 Día</div>
+            <div class="scale-value"><span>≈ 37,8 M</span> años</div>
+        </div>
+        <div class="scale-item">
+            <div class="scale-label">1 Mes</div>
+            <div class="scale-value"><span>≈ 1.150 M</span> años</div>
+        </div>
+    </div>
+
+    <div class="filters fade-in">
+        <button class="filter-btn active" onclick="renderTimeline('all')" id="btn-all">Año completo</button>
+        <button class="filter-btn" onclick="renderTimeline('december')" id="btn-december">Solo diciembre</button>
+        <button class="filter-btn" onclick="renderTimeline('lastday')" id="btn-lastday">31 de diciembre</button>
+    </div>
+</header>
+
+<main>
+    <div class="timeline-wrap" id="timeline-content"></div>
+</main>
+
+<footer>
+    <em>"Somos polvo de estrellas que piensa en las estrellas."</em><br>
+    Inspirado en <em>Los Dragones del Edén</em> y la serie <em>Cosmos</em> de Carl Sagan.<br>
+    La humanidad entera ocupa los últimos segundos del último día de este calendario.
+</footer>
+
+<script>
+/* ─── Starfield ─── */
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let stars = [];
+
+function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    initStars();
+}
+
+function initStars() {
+    stars = [];
+    const n = Math.floor((canvas.width * canvas.height) / 2200);
+    for (let i = 0; i < n; i++) {
+        stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 1.2 + 0.1,
+            speed: Math.random() * 0.12 + 0.02,
+            o: Math.random()
+        });
+    }
+}
+
+function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.o.toFixed(2)})`;
+        ctx.fill();
+        s.y -= s.speed;
+        s.o += (Math.random() - 0.5) * 0.06;
+        s.o = Math.max(0.05, Math.min(0.9, s.o));
+        if (s.y < 0) { s.y = canvas.height; s.x = Math.random() * canvas.width; }
+    }
+    requestAnimationFrame(tick);
+}
+
+window.addEventListener('resize', resize);
+resize();
+tick();
+
+/* ─── Data ─── */
+const data = [
+    { date:"1 Ene", time:"",        age:"Hace 13.800 M años", title:"El Big Bang",               desc:"El origen del espacio, el tiempo y toda la energía del universo conocido.",                              cat:"year",     icon:"💥" },
+    { date:"1 May", time:"",        age:"Hace 10.400 M años", title:"Formación de la Vía Láctea", desc:"Nuestra galaxia toma forma a partir de inmensas nubes de gas y polvo cósmico.",                         cat:"year",     icon:"🌌" },
+    { date:"9 Sep", time:"",        age:"Hace 4.600 M años",  title:"Nace el Sistema Solar",      desc:"El Sol surge de una nebulosa presolar; los planetas se condensan del disco circumestelar.",              cat:"year",     icon:"☀️" },
+    { date:"14 Sep", time:"",       age:"Hace 4.500 M años",  title:"Formación de la Tierra",     desc:"Nuestro planeta se forma por acreción y, poco después, un impacto gigante crea la Luna.",               cat:"year",     icon:"🌍" },
+    { date:"25 Sep", time:"",       age:"Hace 3.800 M años",  title:"Origen de la Vida",          desc:"Las primeras moléculas autorreplicantes aparecen en los océanos primordiales.",                          cat:"year",     icon:"🧬" },
+    { date:"9 Nov",  time:"",       age:"Hace 2.000 M años",  title:"Células Eucariotas",         desc:"Aparición de células con núcleo, un salto evolutivo crucial que posibilita la vida compleja.",           cat:"year",     icon:"🦠" },
+    { date:"1 Dic",  time:"",       age:"Hace 1.150 M años",  title:"Atmósfera de Oxígeno",       desc:"Las cianobacterias transforman la atmósfera terrestre, creando las condiciones para la vida compleja.",  cat:"december", icon:"💨" },
+    { date:"17 Dic", time:"",       age:"Hace 540 M años",    title:"Explosión Cámbrica",         desc:"La gran mayoría de los filos animales aparecen en un intervalo geológicamente breve.",                   cat:"december", icon:"🦐" },
+    { date:"19 Dic", time:"",       age:"Hace 480 M años",    title:"Primeros Peces",             desc:"Los vertebrados más primitivos pueblan los océanos del período Ordovícico.",                              cat:"december", icon:"🐟" },
+    { date:"20 Dic", time:"",       age:"Hace 450 M años",    title:"Colonización Terrestre",     desc:"Las primeras plantas conquistan la tierra firme, transformando el paisaje del planeta.",                  cat:"december", icon:"🌿" },
+    { date:"21 Dic", time:"",       age:"Hace 400 M años",    title:"Primeros Insectos",          desc:"Los artrópodos terrestres comienzan a diversificarse de manera explosiva.",                               cat:"december", icon:"🐜" },
+    { date:"22 Dic", time:"",       age:"Hace 360 M años",    title:"Primeros Anfibios",          desc:"Los vertebrados comienzan su conquista de la tierra firme saliendo del agua.",                           cat:"december", icon:"🐸" },
+    { date:"23 Dic", time:"",       age:"Hace 300 M años",    title:"Primeros Reptiles",          desc:"El huevo amniota permite la vida completamente independiente del agua.",                                  cat:"december", icon:"🦎" },
+    { date:"25 Dic", time:"",       age:"Hace 230 M años",    title:"Era de los Dinosaurios",     desc:"Los grandes reptiles dominan la Tierra durante más de 160 millones de años.",                            cat:"december", icon:"🦖" },
+    { date:"26 Dic", time:"",       age:"Hace 200 M años",    title:"Primeros Mamíferos",         desc:"Pequeñas criaturas nocturnas, apenas del tamaño de un ratón, son nuestros antepasados lejanos.",         cat:"december", icon:"🐁" },
+    { date:"27 Dic", time:"",       age:"Hace 150 M años",    title:"Primeras Aves",              desc:"Evolución de las aves a partir de los dinosaurios terópodos.",                                           cat:"december", icon:"🦅" },
+    { date:"30 Dic", time:"06:24",  age:"Hace 65 M años",     title:"Extinción de los Dinosaurios",desc:"Un asteroide elimina al 75% de las especies. Los mamíferos heredan la Tierra.",                        cat:"december", icon:"☄️" },
+    { date:"31 Dic", time:"13:30",  age:"Hace 15 M años",     title:"Primeros Grandes Simios",   desc:"Aparecen los ancestros comunes de humanos y grandes simios.",                                            cat:"lastday",  icon:"🦧" },
+    { date:"31 Dic", time:"21:00",  age:"Hace 4 M años",      title:"Australopithecus",           desc:"Los primeros homínidos caminan erguidos sobre dos patas en las sabanas africanas.",                      cat:"lastday",  icon:"👣" },
+    { date:"31 Dic", time:"23:52",  age:"Hace 200.000 años",  title:"Homo Sapiens",               desc:"Aparecen los humanos anatómicamente modernos en el este de África.",                                     cat:"lastday",  icon:"👤" },
+    { date:"31 Dic", time:"23:59:46", age:"Hace 6.000 años",  title:"Historia Escrita",           desc:"Invención de la escritura, primeras ciudades, imperios y civilizaciones (Sumeria, Egipto).",             cat:"lastday",  icon:"📜" },
+    { date:"31 Dic", time:"23:59:57", age:"Hace ~500 años",   title:"Renacimiento y Ciencia",     desc:"Copérnico, Galileo, Newton. El método científico y el descubrimiento de América.",                       cat:"lastday",  icon:"🔭" },
+    { date:"31 Dic", time:"23:59:59", age:"Último segundo",   title:"Era Tecnológica",            desc:"Revolución industrial, electricidad, aviones, computadoras, llegada a la Luna, internet.",               cat:"lastday",  icon:"🚀" },
+    { date:"31 Dic", time:"Medianoche", age:"Hoy",            title:"El Presente",                desc:"Todo lo que conocemos y amamos existe en el último instante del Año Nuevo Cósmico.",                     cat:"lastday",  icon:"✨" },
+];
+
+/* ─── Render ─── */
+function renderTimeline(filter) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${filter}`).classList.add('active');
+
+    const wrap = document.getElementById('timeline-content');
+    wrap.innerHTML = '';
+
+    const items = data.filter(d =>
+        filter === 'all'      ? true :
+        filter === 'december' ? (d.cat === 'december' || d.cat === 'lastday') :
+                                 d.cat === 'lastday'
+    );
+
+    items.forEach((item, i) => {
+        const side = i % 2 === 0 ? 'right' : 'left'; // card side on desktop
+
+        const evt = document.createElement('div');
+        evt.className = `evt ${side}`;
+        evt.style.animationDelay = `${i * 0.07}s`;
+
+        evt.innerHTML = `
+            <!-- mobile dot column -->
+            <div class="evt-dot-col">
+                <div class="evt-dot"></div>
+            </div>
+
+            <!-- card -->
+            <div class="evt-card">
+                <span class="evt-icon">${item.icon}</span>
+                <div class="evt-meta">${item.date}${item.time ? ' · ' + item.time : ''}</div>
+                <h2 class="evt-title">${item.title}</h2>
+                <p class="evt-desc">${item.desc}</p>
+                <span class="evt-age">${item.age}</span>
+            </div>
+
+            <!-- desktop dot -->
+            <div class="evt-dot" style="margin-top:22px;"></div>
+
+            <!-- desktop date ghost -->
+            <div class="evt-date-col">
+                <div class="evt-date-label">${item.date}</div>
+            </div>
+        `;
+
+        wrap.appendChild(evt);
+    });
+}
+
+renderTimeline('all');
+
+/* ─── Scroll-triggered fade ─── */
+const fadeEls = document.querySelectorAll('.fade-in');
+const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+fadeEls.forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
